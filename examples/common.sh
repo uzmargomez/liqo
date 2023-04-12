@@ -182,6 +182,28 @@ function get_k3d_kubeconfig() {
     k3d kubeconfig write "$name"
 }
 
+function install_coredns_server() {
+    
+    local kubeconfig="$1"
+
+    info "Installing coredns on cluster..."
+
+    fail_on_error "kubectl create namespace coredns --kubeconfig $kubeconfig" "Failed to create namespace coredns"
+
+    #fail_on_error "kubectl patch configmap -n kube-system kube-proxy --patch-file manifests/metallb/config-patch.yaml --kubeconfig $kubeconfig" "Failed to install patch configmap"
+
+    fail_on_error "kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.9/config/manifests/metallb-native.yaml --kubeconfig $kubeconfig" "Failed to install metallb"
+
+    fail_on_error "kubectl apply -f manifests/metallb/addresspool.yaml --kubeconfig $kubeconfig" "Failed to set addresspool"
+
+    fail_on_error "kubectl apply -f manifests/metallb/advertisement.yaml --kubeconfig $kubeconfig" "Failed to set advertisement"
+
+    fail_on_error "helm -n coredns upgrade -i coredns coredns/coredns --kubeconfig /home/uzmargomez/.k3d/kubeconfig-edgedns.yaml \
+        --values manifests/values/coredns.yaml" "Failed to install coredns"
+
+
+}
+
 function install_k8gb() {
     local kubeconfig="$1"
     local cluster_geo_tag="$2"
